@@ -1,0 +1,12 @@
+{
+  "name": "your-app",
+  "version": "0.1.0",
+  "main": "src/main.js",
+  "devDependencies": {
+    "aliasify": "^1.9.0",
+    "browserify": "^13.0.0",
+    "concat": "^1.0.0",
+    "gulp": "^3.9.0",
+    "gulp-concat": "^2.6.0"
+  }
+}
