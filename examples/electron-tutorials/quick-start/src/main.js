@@ -16,6 +16,7 @@ app.on('ready', function() {
   mainWindow = new BrowserWindow({ width: 800, height: 600 });
   mainWindow.loadURL('index.html');
   mainWindow.webContents.openDevTools();
+  console.log('process: ' + JSON.stringify(process));
 
   mainWindow.on('closed', function() {
     mainWindow = null;
