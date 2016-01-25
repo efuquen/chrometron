@@ -1,0 +1,16 @@
+{
+  "name": "your-app",
+  "version": "0.1.0",
+  "main": "src/background.js",
+  "devDependencies": {
+    "aliasify": "^1.9.0",
+    "babel-preset-es2015": "^6.3.13",
+    "babelify": "^7.2.0",
+    "browserify": "^13.0.0",
+    "concat": "^1.0.0",
+    "gulp": "^3.9.0",
+    "gulp-concat": "^2.6.0",
+    "vinyl-buffer": "^1.0.0",
+    "vinyl-source-stream": "^1.1.0"
+  }
+}

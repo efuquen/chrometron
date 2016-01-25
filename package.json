@@ -1,5 +1,8 @@
 {
-  "name"    : "chrometron",
-  "version" : "0.1.0",
-  "main"    : "src/main.js"
+  "name": "chrometron",
+  "version": "0.1.0",
+  "main": "src/main.js",
+  "dependencies": {
+    "uuid": "^2.0.1"
+  }
 }
