@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+  "name": "Chrometron Menu Example",
+  "version": "1",
+  "icons": {
+    "128": "images/icon_128.png"
+  },
+  "permissions": [],
+  "app": {
+    "background": {
+      "scripts": ["js/background.js"]
+    }
+  },
+  "minimum_chrome_version": "33"
+}

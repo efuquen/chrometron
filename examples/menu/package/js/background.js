@@ -2703,9 +2703,87 @@ function hasOwnProperty(obj, prop) {
 var electron = require('chrometron');
 var app = electron.app;
 var BrowserWindow = electron.BrowserWindow;
-var dialog = electron.dialog;
+var Menu = electron.Menu;
+var MenuItem = electron.MenuItem;
 
 var mainWindow = null;
+
+var template = [{
+  label: 'Edit',
+  submenu: [{
+    label: 'Undo',
+    accelerator: 'CmdOrCtrl+Z',
+    role: 'undo'
+  }, {
+    label: 'Redo',
+    accelerator: 'Shift+CmdOrCtrl+Z',
+    role: 'redo'
+  }, {
+    type: 'separator'
+  }, {
+    label: 'Cut',
+    accelerator: 'CmdOrCtrl+X',
+    role: 'cut'
+  }, {
+    label: 'Copy',
+    accelerator: 'CmdOrCtrl+C',
+    role: 'copy'
+  }, {
+    label: 'Paste',
+    accelerator: 'CmdOrCtrl+V',
+    role: 'paste'
+  }, {
+    label: 'Select All',
+    accelerator: 'CmdOrCtrl+A',
+    role: 'selectall'
+  }]
+}, {
+  label: 'View',
+  submenu: [{
+    label: 'Reload',
+    accelerator: 'CmdOrCtrl+R',
+    click: function click(item, focusedWindow) {
+      if (focusedWindow) focusedWindow.reload();
+    }
+  }, {
+    label: 'Toggle Full Screen',
+    accelerator: function () {
+      if (process.platform == 'darwin') return 'Ctrl+Command+F';else return 'F11';
+    }(),
+    click: function click(item, focusedWindow) {
+      if (focusedWindow) focusedWindow.setFullScreen(!focusedWindow.isFullScreen());
+    }
+  }, {
+    label: 'Toggle Developer Tools',
+    accelerator: function () {
+      if (process.platform == 'darwin') return 'Alt+Command+I';else return 'Ctrl+Shift+I';
+    }(),
+    click: function click(item, focusedWindow) {
+      if (focusedWindow) focusedWindow.toggleDevTools();
+    }
+  }]
+}, {
+  label: 'Window',
+  role: 'window',
+  submenu: [{
+    label: 'Minimize',
+    accelerator: 'CmdOrCtrl+M',
+    role: 'minimize'
+  }, {
+    label: 'Close',
+    accelerator: 'CmdOrCtrl+W',
+    role: 'close'
+  }]
+}, {
+  label: 'Help',
+  role: 'help',
+  submenu: [{
+    label: 'Learn More',
+    click: function click() {
+      require('chrometron').shell.openExternal('http://electron.atom.io');
+    }
+  }]
+}];
 
 /*app.on('window-all-closed', function() {
   if (process.platform != 'darwin') {
@@ -2721,23 +2799,15 @@ app.on('ready', function () {
     mainWindow.loadURL('file://' + __dirname + '/../index.html');
   }
 
-  mainWindow.webContents.on('did-finish-load', function () {
-    dialog.showMessageBox(mainWindow, {
-      type: 'warning',
-      buttons: ['Close', 'Keep Waiting'],
-      message: 'Editor is not responding',
-      detail: 'The editor is not responding. Would you like to force close it or just keep waiting?'
-    }, function (chosen) {
-      console.log('warning chosen: ' + chosen);
-    });
-  });
+  var menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
 
   mainWindow.on('closed', function () {
     mainWindow = null;
   });
 });
 
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/src/background.js","/src")
+}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/src/js/background.js","/src/js")
 },{"_process":7,"buffer":2,"chrometron":16}],11:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 
@@ -3044,15 +3114,22 @@ BrowserWindow.prototype.loadURL = function(url, options) {
     id: this._id,
     bounds: { width: this.width, height: this.height },
   }, function(createdWindow) {
+    this._window = createdWindow;
+
     createdWindow.onClosed.addListener(function() {
       this.emit('closed');
     });
 
-    createdWindow.contentWindow.onload = function() {
+    createdWindow.contentWindow.addEventListener('load', function() {
       this.webContents.emit('did-finish-load');
-    }.bind(this);
+    }.bind(this));
 
-    this._window = createdWindow;
+    createdWindow.contentWindow.document.addEventListener('DOMContentLoaded',
+      function() {
+        this.webContents.emit('dom-ready');
+      }.bind(this));
+
+    this.emit('_window-created');
   }.bind(this));
 };
 
@@ -3063,13 +3140,11 @@ BrowserWindow.prototype.webContents = new WebContents();
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 module.exports = Dialog = function() {};
 
-Dialog.prototype.showMessageBox = function(browserWindow, options, callback) {
-  var window   = browserWindow._window.contentWindow;
-  var document = window.document;
-
-  var dialog = document.createElement('dialog');
+function buildMessageBox(
+  document, options, callback, dialogTag, buttonTag, dialogShow, dialogClose) {
+  var dialog = document.createElement(dialogTag);
   if (options.message) {
-    var message = document.createElement('b');
+    var message = document.createElement('h3');
     message.innerHTML = options.message;
     dialog.appendChild(message);
   }
@@ -3087,11 +3162,11 @@ Dialog.prototype.showMessageBox = function(browserWindow, options, callback) {
     options.buttons.reverse();
     for (var i = 0; i < options.buttons.length; i++) {
       var buttonText = options.buttons[i];
-      var button = document.createElement('button');
+      var button = document.createElement(buttonTag);
       button.innerHTML = buttonText;
       var chosen = i;
       button.onclick = function() {
-        dialog.close();
+        dialogClose(dialog);
         callback(chosen);
       };
 
@@ -3102,7 +3177,52 @@ Dialog.prototype.showMessageBox = function(browserWindow, options, callback) {
   }
 
   document.body.appendChild(dialog);
-  dialog.show();
+  dialogShow(dialog);
+}
+
+function showMessageBoxWhenWindowReady(window, options, callback) {
+  var document = window.document;
+
+  //Easy to switch out html5 and paper elements.
+  buildMessageBox(document, options, callback, 'paper-dialog', 'paper-button',
+    function(dialog){
+      dialog.open();
+    }, function(dialog) {
+      dialog.close();
+    });
+}
+
+Dialog.prototype.showMessageBox = function() {
+  if (arguments.length === 3) {
+    var browserWindow = arguments[0];
+    var options = arguments[1];
+    var callback = arguments[2];
+    if (browserWindow._window) {
+      if (browserWindow._window.contentWindow.document.body) {
+        showMessageBoxWhenWindowReady(browserWindow._window.contentWindow,
+          options, callback);
+      } else {
+        browserWindow.webContents.on('dom-ready', function() {
+          showMessageBoxWhenWindowReady(browserWindow._window.contentWindow,
+            options, callback);
+        });
+      }
+    } else {
+      browserWindow.on('_window-created', function() {
+        browserWindow.webContents.on('dom-ready', function() {
+          showMessageBoxWhenWindowReady(browserWindow._window.contentWindow,
+            options, callback);
+        });
+      }.bind(this));
+    }
+  } else if (arguments.length === 2) {
+    var window = chrome.window.current().contentWindow;
+    var options = arguments[0];
+    var callback = arguments[1];
+    showMessageBoxWhenWindowReady(window, options, callback);
+  } else if (arguments.length < 1) {
+    throw 'showMessageBox requires options and callback to be set';
+  }
 };
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../../src/dialog.js","/../../src")
@@ -3118,17 +3238,26 @@ module.exports = {
   dialog: new Dialog(),
 };
 
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../../node_modules/chrometron/src/main.js","/../../node_modules/chrometron/src")
+}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/node_modules/chrometron/src/main.js","/node_modules/chrometron/src")
 },{"./app":13,"./browserwindow":14,"./dialog":15,"_process":7,"buffer":2}],17:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 var EventEmitter = require('events');
 var util = require('util');
 
-module.exports = WebContents = function() {};
+module.exports = WebContents = function() {
+  this._loading = true;
+  this.on('did-finish-load', function() {
+    this._loading = false;
+  }.bind(this));
+};
 
 util.inherits(WebContents, EventEmitter);
 
 WebContents.prototype.openDevTools = function() {};
+
+WebContents.prototype.isLoading = function() {
+  return this._loading;
+};
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/../../src/webcontents.js","/../../src")
 },{"_process":7,"buffer":2,"events":4,"util":9}]},{},[10]);

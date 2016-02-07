@@ -1,0 +1,23 @@
+{
+  "name": "chrometron",
+  "description": "",
+  "main": "src/main.js",
+  "authors": [
+    "efuquen@gmail.com"
+  ],
+  "license": "GPLv3",
+  "homepage": "https://github.com/efuquen/chrometron",
+  "moduleType": [],
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.2.0",
+    "paper-elements": "PolymerElements/paper-elements#^1.0.7"
+  }
+}

@@ -22,15 +22,22 @@ BrowserWindow.prototype.loadURL = function(url, options) {
     id: this._id,
     bounds: { width: this.width, height: this.height },
   }, function(createdWindow) {
+    this._window = createdWindow;
+
     createdWindow.onClosed.addListener(function() {
       this.emit('closed');
     });
 
-    createdWindow.contentWindow.onload = function() {
+    createdWindow.contentWindow.addEventListener('load', function() {
       this.webContents.emit('did-finish-load');
-    }.bind(this);
+    }.bind(this));
 
-    this._window = createdWindow;
+    createdWindow.contentWindow.document.addEventListener('DOMContentLoaded',
+      function() {
+        this.webContents.emit('dom-ready');
+      }.bind(this));
+
+    this.emit('_window-created');
   }.bind(this));
 };
 

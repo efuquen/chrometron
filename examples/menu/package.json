@@ -1,5 +1,5 @@
 {
-  "name": "chrometron-dialog-boxes",
+  "name": "your-app",
   "version": "0.1.0",
   "main": "src/js/background.js",
   "devDependencies": {
@@ -10,8 +10,6 @@
     "concat": "^1.0.0",
     "gulp": "^3.9.0",
     "gulp-concat": "^2.6.0",
-    "gulp-crisper": "^1.0.0",
-    "gulp-vulcanize": "^6.1.0",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0"
   }

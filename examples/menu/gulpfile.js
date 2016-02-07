@@ -33,7 +33,7 @@ gulp.task('package-html', function() {
     	abspath: '',
     	excludes: [],
     	stripExcludes: false,
-      inlineScripts: false,
+      inlineScripts: true,
     }))
     .pipe(crisper({
 			scriptInHead: false, // true is default
